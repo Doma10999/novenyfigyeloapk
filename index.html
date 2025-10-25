@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Növényfigyelő</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      margin-top: 10px;
+      margin-bottom: 30px;
+      font-size: 2.2em;
+      font-weight: bold;
+    }
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      margin: 20px auto;
+      max-width: 400px;
+      position: relative;
+    }
+    .accountCard {
+      margin-bottom: 30px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      background: #f7fafc;
+      box-shadow: none;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #logout { display: none; margin-top: 20px; }
+    #plantData { display: block; }
+    .gauge-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 20px auto;
+    }
+    .gauge-svg {
+      transform: rotate(-90deg);
+    }
+    .gauge-bg {
+      fill: none;
+      stroke: #eee;
+      stroke-width: 15;
+    }
+    .gauge-fill {
+      fill: none;
+      stroke-width: 15;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
+    }
+    .gauge-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 28px;
+      font-weight: bold;
+    }
+    #addAccountBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background-color: #28a745;
+      border-radius: 50%;
+      color: white;
+      font-size: 36px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+    }
+    .deleteBtn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 22px;
+      background: transparent;
+      border: none;
+      color: #8e24aa;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+      width: auto;
+      height: auto;
+      box-shadow: none;
+      transition: color 0.2s;
+    }
+    .deleteBtn:hover {
+      color: #d32f2f;
+      background: none;
+    }
+    .card h3 {
+      margin-top: 40px;
+      margin-bottom: 10px;
+    }
+    #modal {
+      display: none;
+      position: fixed;
+      z-index: 1100;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.42);
+      justify-content: center;
+      align-items: center;
+    }
+    #modalContent {
+      background: #fff;
+      padding: 32px 24px 24px 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      width: 350px;
+      max-width: 90vw;
+      text-align: center;
+      position: relative;
+      animation: popIn 0.2s;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.94); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    #modalClose {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      font-size: 26px;
+      font-weight: bold;
+      color: #aaa;
+      cursor: pointer;
+      z-index: 5;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    #modalClose:hover {
+      color: #111;
+    }
+    #modalContent h3 {
+      font-size: 1.36em;
+      font-weight: bold;
+      margin-bottom: 18px;
+      margin-top: 6px;
+    }
+    #modalContent input {
+      width: 90%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      background: #f7fafc;
+      box-shadow: none;
+    }
+    #modalContent button[type="submit"] {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 18px;
+      width: 100%;
+      font-weight: 500;
+      box-shadow: 0 2px 10px rgba(76,175,80,0.12);
+      transition: background 0.2s;
+    }
+    #modalContent button[type="submit"]:hover {
+      background: #43a047;
+    }
+    #addAccountStatus {
+      color: red;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+    #accountsContainer {
+      margin-top: 30px;
+      margin-bottom: 40px;
+      display: none;
+    }
+    #confirmModal {
+      display: none;
+      position: fixed;
+      z-index: 1300;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.45);
+      justify-content: center;
+      align-items: center;
+    }
+    #confirmModalContent {
+      background: #fff;
+      padding: 30px 24px 20px 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      width: 350px;
+      max-width: 96vw;
+      text-align: center;
+      position: relative;
+      animation: popIn 0.18s;
+    }
+    #confirmClose {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      font-size: 25px;
+      font-weight: bold;
+      color: #bbb;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    #confirmClose:hover { color: #111; }
+    .confirm-btn-group {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 25px;
+    }
+    .confirm-btn {
+      flex: 1;
+      padding: 9px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      transition: background 0.13s, color 0.13s;
+    }
+    .confirm-igen       { background: #4CAF50; color: #fff; }
+    .confirm-igen:hover { background: #388e3c; }
+    .confirm-nem        { background: #eee; color: #222; }
+    .confirm-nem:hover  { background: #dadada; }
+    .slider-container {
+      margin-top: 16px;
+      display: none;
+    }
+    .led-slider {
+      width: 92%;
+      margin: 12px auto 0 auto;
+      display: block;
+      appearance: none;
+      background: #e0e0e0;
+      height: 16px;
+      border-radius: 12px;
+      outline: none;
+      box-shadow: 0 2px 6px rgba(44,124,54,0.10);
+    }
+    .led-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      margin-top: -5px;
+      background: #4CAF50;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 4px 10px rgba(76,175,80,0.11);
+      cursor: pointer;
+      transition: background 0.19s;
+    }
+    .led-slider::-webkit-slider-runnable-track {
+      height: 16px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #e7ffe0 0%, #4CAF50 100%);
+    }
+    .led-slider::-moz-range-thumb {
+      width: 26px;
+      height: 26px;
+      background: #4CAF50;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 4px 10px rgba(76,175,80,0.11);
+      cursor: pointer;
+    }
+    .led-slider::-moz-range-track {
+      height: 16px;
+      border-radius: 12px;
+      background: linear-gradient(90deg, #e7ffe0 0%, #4CAF50 100%);
+    }
+    .led-slider::-ms-thumb {
+      width: 26px;
+      height: 26px;
+      background: #4CAF50;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 4px 10px rgba(76,175,80,0.11);
+      cursor: pointer;
+    }
+    .led-slider::-ms-fill-lower, .led-slider::-ms-fill-upper {
+      height: 16px;
+    }
+
+    .card select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-color: #f7fafc;
+      border: 2px solid #a8d5b5;
+      border-radius: 10px;
+      padding: 10px 40px 10px 14px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #2e7d32;
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 2px 5px rgba(76,175,80,0.15);
+      transition: all 0.25s ease;
+      background-image: linear-gradient(45deg, transparent 50%, #4caf50 50%),
+                        linear-gradient(135deg, #4caf50 50%, transparent 50%);
+      background-position: calc(100% - 25px) center, calc(100% - 20px) center;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    .card select:hover {
+      background-color: #eaffea;
+      border-color: #4caf50;
+      box-shadow: 0 3px 8px rgba(76,175,80,0.25);
+    }
+
+    .card select:focus {
+      border-color: #43a047;
+      box-shadow: 0 0 0 3px rgba(76,175,80,0.25);
+      background-color: #ffffff;
+    }
+
+    .card label {
+      font-weight: 600;
+      color: #2e7d32;
+      margin-bottom: 6px;
+      display: block;
+      font-size: 15px;
+    }
+
+    .notification-toggle {
+      margin-top: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      background-color: #ccc;
+      border-radius: 24px;
+      width: 100%;
+      height: 100%;
+      transition: background-color 0.3s;
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #4caf50;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(26px);
+    }
+
+    .notification-label {
+      font-weight: 500;
+      color: #2e7d32;
+      font-size: 14px;
+    }
+  </style>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfo3UqEb77ihYOqSJZvIFVr2VRGf6dJ4w",
+      authDomain: "plant-monitor-3976f.firebaseapp.com",
+      databaseURL: "https://plant-monitor-3976f-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "plant-monitor-3976f",
+      storageBucket: "plant-monitor-3976f.appspot.com",
+      messagingSenderId: "705425147510",
+      appId: "1:705425147510:web:71f15bde879f3672df8157",
+      measurementId: "G-890H6FDBYE"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth();
+    const accounts = new Map();
+    const STORAGE_KEY = 'storedAccounts';
+    const PLANT_TYPE_KEY = 'plantTypeData_hu_v1';
+    const NOTIFICATION_KEY = 'notificationSettings_v1';
+    function getStoredAccounts() {
+      try { const data = localStorage.getItem(STORAGE_KEY); return data ? JSON.parse(data) : []; } catch { return []; }
+    }
+    function setStoredAccounts(accs) { localStorage.setItem(STORAGE_KEY, JSON.stringify(accs)); }
+    function addStoredAccount(email, uid) {
+      const accs = getStoredAccounts();
+      if (!accs.some(a => a.uid === uid)) { accs.push({ email, uid }); setStoredAccounts(accs); }
+    }
+    function removeStoredAccount(uid) {
+      const accs = getStoredAccounts().filter(a => a.uid !== uid);
+      setStoredAccounts(accs);
+      const plantTypesDict = getPlantTypeAll();
+      delete plantTypesDict[uid];
+      savePlantTypeAll(plantTypesDict);
+      const notificationDict = getNotificationAll();
+      delete notificationDict[uid];
+      saveNotificationAll(notificationDict);
+    }
+    function getPlantTypeAll() {
+      try { const d = localStorage.getItem(PLANT_TYPE_KEY); return d ? JSON.parse(d) : {}; } catch { return {}; }
+    }
+    function savePlantTypeAll(obj) { localStorage.setItem(PLANT_TYPE_KEY, JSON.stringify(obj)); }
+    function getPlantType(uid) {
+      const d = getPlantTypeAll(); return d[uid] || '';
+    }
+    function setPlantType(uid, value) {
+      const d = getPlantTypeAll(); d[uid] = value; savePlantTypeAll(d);
+    }
+    function getNotificationAll() {
+      try { const d = localStorage.getItem(NOTIFICATION_KEY); return d ? JSON.parse(d) : {}; } catch { return {}; }
+    }
+    function saveNotificationAll(obj) { localStorage.setItem(NOTIFICATION_KEY, JSON.stringify(obj)); }
+    function getNotificationEnabled(uid) {
+      const d = getNotificationAll(); return d[uid] === true;
+    }
+    function setNotificationEnabled(uid, enabled) {
+      const d = getNotificationAll(); d[uid] = enabled; saveNotificationAll(d);
+    }
+    const loginForm = document.getElementById("loginForm");
+    const emailInput = document.getElementById("email");
+    const passInput = document.getElementById("password");
+    const statusDiv = document.getElementById("status");
+    const gaugeValue = document.getElementById("gauge-value");
+    const gaugeCircle = document.querySelector(".gauge-fill");
+    const logoutBtn = document.getElementById("logout");
+    const plantDataCard = document.getElementById("plantData");
+    const addAccountBtn = document.getElementById("addAccountBtn");
+    const modal = document.getElementById("modal");
+    const modalCloseBtn = document.getElementById("modalClose");
+    const addNewAccountForm = document.getElementById("addNewAccountForm");
+    const newAccountEmail = document.getElementById("newAccountEmail");
+    const newAccountPass = document.getElementById("newAccountPass");
+    const addAccountStatus = document.getElementById("addAccountStatus");
+    const accountsContainer = document.getElementById("accountsContainer");
+    const plantCategories = {
+      "🌵Szárazkedvelő": { min: 10, max: 40 },
+      "🌾Mérsékelten száraz": { min: 20, max: 45 },
+      "🌿Kiegyensúlyozott vízigényű": { min: 30, max: 60 },
+      "🌱Nedvességkedvelő": { min: 50, max: 80 },
+      "💧Vízigényes": { min: 70, max: 100 }
+    };
+    function normalizeToCategory(value, min, max) {
+      let norm = (value - min) / (max - min);
+      return Math.max(0, Math.min(1, norm));
+    }
+    const RADIUS = 80, CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+    gaugeCircle.style.strokeDasharray = CIRCUMFERENCE;
+    let firstUser = null;
+    const lastNotificationStates = new Map();
+    window.addEventListener('load', () => {
+      const stored = getStoredAccounts();
+      if (stored.length > 0) {
+        stored.forEach(acc => {
+          addAccountCard({ uid: acc.uid }, acc.email, auth, false);
+        });
+        hideLoginScreen();
+      } else {
+        showLoginScreen();
+      }
+    });
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        if(!accounts.has(user.uid)) {
+          addAccountCard(user, user.email, auth, true);
+          addStoredAccount(user.email, user.uid);
+          hideLoginScreen();
+        }
+      } else {
+        if(accounts.size === 0){
+          showLoginScreen();
+        }
+      }
+    });
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusDiv.style.color = "green";
+      statusDiv.innerText = "Bejelentkezés...";
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
+        const user = userCred.user;
+        if (accounts.has(user.uid)) {
+          statusDiv.style.color = "red";
+          statusDiv.innerText = "Ez a fiók már hozzá van adva!";
+          modal.style.display = "none";
+          return;
+        }
+        addAccountCard(user, emailInput.value, auth, accounts.size === 0);
+        addStoredAccount(emailInput.value, user.uid);
+        hideLoginScreen();
+      } catch (err) {
+        statusDiv.style.color = "red";
+        if (["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found"].includes(err.code)) {
+          statusDiv.innerText = "Hibás felhasználónév vagy jelszó!";
+        } else {
+          statusDiv.innerText = "Hiba: " + err.message;
+        }
+      }
+    });
+    logoutBtn.addEventListener("click", async () => {
+      if (!firstUser) return;
+      await signOut(auth);
+      removeAccount(firstUser.uid);
+      showLoginScreen();
+    });
+    function showLoginScreen() {
+      loginForm.style.display = "block";
+      statusDiv.style.display = "block";
+      logoutBtn.style.display = "none";
+      plantDataCard.style.display = "block";
+      accountsContainer.style.display = "none";
+      addAccountBtn.style.display = "none";
+      updateGauge(0);
+      firstUser = null;
+    }
+    function hideLoginScreen() {
+      loginForm.style.display = "none";
+      statusDiv.style.display = "none";
+      logoutBtn.style.display = "block";
+      plantDataCard.style.display = "none";
+      accountsContainer.style.display = "block";
+      addAccountBtn.style.display = "flex";
+    }
+    function updateGauge(value) {
+      gaugeValue.innerText = value + "%";
+      const offset = CIRCUMFERENCE - (value / 100) * CIRCUMFERENCE;
+      gaugeCircle.style.strokeDashoffset = offset;
+      const color = getGradientColor(value);
+      gaugeCircle.style.stroke = color;
+      gaugeValue.style.color = color;
+    }
+    function getGradientColor(value) {
+      let r, g, b;
+      if (value <= 50) {
+        const ratio = value / 50;
+        r = 255;
+        g = Math.round(69 + (215 - 69) * ratio);
+        b = 0;
+      } else {
+        const ratio = (value - 50) / 50;
+        r = Math.round(255 + (76 - 255) * ratio);
+        g = Math.round(215 + (175 - 215) * ratio);
+        b = Math.round(0 + (80 - 0) * ratio);
+      }
+      return `rgb(${r},${g},${b})`;
+    }
+    addAccountBtn.addEventListener("click", () => {
+      modal.style.display = "flex";
+      addAccountStatus.innerText = "";
+    });
+    modalCloseBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+    window.addEventListener("click", (e) => {
+      if (e.target === modal) modal.style.display = "none";
+    });
+    addNewAccountForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = newAccountEmail.value.trim();
+      const pass = newAccountPass.value.trim();
+      if (!email || !pass) {
+        addAccountStatus.style.color = "red";
+        addAccountStatus.innerText = "Kérlek, töltsd ki mindkét mezőt!";
+        return;
+      }
+      addAccountStatus.style.color = "green";
+      addAccountStatus.innerText = "Bejelentkezés folyamatban...";
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, email, pass);
+        const user = userCred.user;
+        if (accounts.has(user.uid)) {
+          addAccountStatus.style.color = "red";
+          addAccountStatus.innerText = "Ez a fiók már hozzá van adva!";
+          modal.style.display = "none";
+          return;
+        }
+        addAccountCard(user, email, auth);
+        addStoredAccount(email, user.uid);
+        modal.style.display = "none";
+        newAccountEmail.value = "";
+        newAccountPass.value = "";
+      } catch (err) {
+        addAccountStatus.style.color = "red";
+        if (["auth/invalid-credential","auth/wrong-password","auth/user-not-found"].includes(err.code)) {
+          addAccountStatus.innerText = "Hibás felhasználónév vagy jelszó!";
+        } else {
+          addAccountStatus.innerText = "Hiba: " + err.message;
+        }
+      }
+    });
+    function removeAccount(uid) {
+      if (accounts.has(uid)) {
+        accounts.get(uid).card.remove();
+        accounts.delete(uid);
+      }
+      removeStoredAccount(uid);
+      if (accounts.size === 0) {
+        showLoginScreen();
+      }
+    }
+    let confirmResolve = null;
+    function showConfirmModal(message) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById("confirmModal");
+        document.getElementById("confirmText").innerText = message;
+        modal.style.display = "flex";
+        confirmResolve = resolve;
+      });
+    }
+    function hideConfirmModal() {
+      const modal = document.getElementById("confirmModal");
+      modal.style.display = "none";
+      if (confirmResolve) confirmResolve(false);
+      confirmResolve = null;
+    }
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("confirmIgenBtn").addEventListener("click", () => {
+        const modal = document.getElementById("confirmModal");
+        modal.style.display = "none";
+        if (confirmResolve) confirmResolve(true);
+        confirmResolve = null;
+      });
+      document.getElementById("confirmNemBtn").addEventListener("click", () => {
+        hideConfirmModal();
+      });
+      document.getElementById("confirmClose").addEventListener("click", () => {
+        hideConfirmModal();
+      });
+      window.addEventListener("keydown", (e) => {
+        if(e.key === "Escape" && document.getElementById("confirmModal").style.display === "flex") {
+          hideConfirmModal();
+        }
+      });
+    });
+    function addAccountCard(user, email, auth, isMain=false) {
+      const plantTypes = [
+        "🌵Szárazkedvelő",
+        "🌾Mérsékelten száraz",
+        "🌿Kiegyensúlyozott vízigényű",
+        "🌱Nedvességkedvelő",
+        "💧Vízigényes"
+      ];
+      const card = document.createElement("div");
+      card.className = "card accountCard";
+      const selectId = `plantTypeSelect-${user.uid}`;
+      const toggleId = `notificationToggle-${user.uid}`;
+      const optionsHtml = plantTypes.map(typ =>
+        `<option value="${typ}">${typ}</option>`
+      ).join("");
+      const plantTypeSelectHtml = `
+        <div style="margin-top:20px; margin-bottom:15px;">
+          <label for="${selectId}" class="plant-type-label">Növény típusa:</label>
+          <div class="select-wrap">
+            <select id="${selectId}" class="plant-type-select">
+              <option value="">Válassz kategóriát</option>
+              ${optionsHtml}
+          </select>
+        </div>`;
+      const notificationToggleHtml = `
+        <div class="notification-toggle">
+          <span class="notification-label">Figyelmeztetés</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="${toggleId}">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>`;
+      card.innerHTML = `
+        <button class="deleteBtn" aria-label="Fiók törlése">✖</button>
+        <h3>${email}</h3>
+        <div class="gauge-container">
+          <svg class="gauge-svg" width="200" height="200" viewBox="0 0 200 200">
+            <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
+            <circle class="gauge-fill" cx="100" cy="100" r="80"></circle>
+          </svg>
+          <div class="gauge-value">0%</div>
+        </div>
+        <div class="slider-container">
+          <input type="range" min="0" max="100" step="10" value="0" class="led-slider" />
+          <div class="slider-labels"><span>Fény erő</span></div>
+        </div>
+        ${plantTypeSelectHtml}
+        ${notificationToggleHtml}
+        ${isMain ? `<button class="logoutBtn">Kijelentkezés</button>` : ""}
+      `;
+      const gaugeValue = card.querySelector(".gauge-value");
+      const gaugeCircle = card.querySelector(".gauge-fill");
+      gaugeCircle.style.strokeDasharray = 2 * Math.PI * 80;
+      let currPercent = 0;
+      let currCat = "";
+      let deviceId = null;
+      function updateAccountGauge(realPercent, cat) {
+        if (plantCategories[cat]) {
+          let { min, max } = plantCategories[cat];
+          let normalized = normalizeToCategory(realPercent, min, max);
+          let display = Math.round(normalized * 100);
+          gaugeValue.innerText = display + "%";
+          const offset = 2 * Math.PI * 80 - (display / 100) * 2 * Math.PI * 80;
+          gaugeCircle.style.strokeDashoffset = offset;
+          const color = getGradientColor(display);
+          gaugeCircle.style.stroke = color;
+          gaugeValue.style.color = color;
+        } else {
+          gaugeValue.innerText = realPercent + "%";
+          const offset = 2 * Math.PI * 80 - (realPercent / 100) * 2 * Math.PI * 80;
+          gaugeCircle.style.strokeDashoffset = offset;
+          const color = getGradientColor(realPercent);
+          gaugeCircle.style.stroke = color;
+          gaugeValue.style.color = color;
+        }
+      }
+      (async () => {
+        const devicesRef = ref(db, `users/${user.uid}/devices`);
+        const snapshot = await get(devicesRef);
+        if (snapshot.exists()) {
+          const devicesData = snapshot.val();
+          const firstDeviceId = Object.keys(devicesData)[0];
+          deviceId = firstDeviceId;
+          const deviceObj = devicesData[firstDeviceId];
+          const soilRef = ref(db, `users/${user.uid}/devices/${firstDeviceId}/sensorValue`);
+          onValue(soilRef, (snap) => {
+            if (snap.exists()) {
+              currPercent = snap.val();
+              updateAccountGauge(currPercent, currCat);
+              if (getNotificationEnabled(user.uid) && currPercent <= 35) {
+                const lastState = lastNotificationStates.get(user.uid);
+                if (lastState === undefined || lastState > 35) {
+                  OneSignal.push(function () {
+                    OneSignal.sendSelfNotification(
+                      "Növényfigyelő",
+                      `${email} növénye szomjas! Talajnedvesség: ${currPercent}% 🌱💧`,
+                      'https://novenyfigyelo.netlify.app',
+                      null,
+                      { notificationType: 'moistureAlert', userId: user.uid, email: email }
+                    );
+                  });
+                }
+                lastNotificationStates.set(user.uid, currPercent);
+              } else {
+                lastNotificationStates.set(user.uid, currPercent);
+              }
+            }
+          });
+          const sliderContainer = card.querySelector('.slider-container');
+          if (deviceObj && deviceObj.hasOwnProperty('ledLevel')) {
+            sliderContainer.style.display = "block";
+            const slider = card.querySelector('.led-slider');
+            const ledLevelRef = ref(db, `users/${user.uid}/devices/${firstDeviceId}/ledLevel`);
+            onValue(ledLevelRef, (snap) => {
+              if (snap.exists()) {
+                const serverValue = snap.val();
+                slider.value = serverValue;
+              }
+            });
+            let localValue = null;
+            slider.addEventListener('input', async (e) => {
+              localValue = parseInt(e.target.value);
+            });
+            slider.addEventListener('change', async (e) => {
+              if (localValue !== null) {
+                await set(ledLevelRef, localValue);
+                localValue = null;
+              }
+            });
+          } else {
+            sliderContainer.style.display = "none";
+          }
+        }
+      })();
+      const selectElem = card.querySelector(`#${selectId}`);
+      setTimeout(() => {
+        const saved = getPlantType(user.uid);
+        if (saved) {
+          selectElem.value = saved;
+          currCat = saved;
+          updateAccountGauge(currPercent, currCat);
+        }
+      }, 10);
+      selectElem.addEventListener('change', (e) => {
+        setPlantType(user.uid, e.target.value);
+        currCat = e.target.value;
+        updateAccountGauge(currPercent, currCat);
+      });
+      const notificationToggle = card.querySelector(`#${toggleId}`);
+      notificationToggle.checked = getNotificationEnabled(user.uid);
+      notificationToggle.addEventListener('change', (e) => {
+        setNotificationEnabled(user.uid, e.target.checked);
+      });
+      const deleteBtn = card.querySelector(".deleteBtn");
+      deleteBtn.addEventListener("click", async () => {
+        const confirmed = await showConfirmModal("Biztosan törlöd ezt a fiókot?");
+        if (confirmed) {
+          await signOut(auth);
+          removeAccount(user.uid);
+        }
+      });
+      if (isMain) {
+        const logoutBtnMain = card.querySelector(".logoutBtn");
+        logoutBtnMain.addEventListener("click", async () => {
+          await signOut(auth);
+          removeAccount(user.uid);
+        });
+      }
+      accountsContainer.appendChild(card);
+      accounts.set(user.uid, { user, auth, card });
+    }
+  </script>
+  <script>
+    window.OneSignal = window.OneSignal || [];
+    OneSignal.push(function() {
+      OneSignal.init({
+        appId: "9083ca92-fe8b-460c-8591-3430a5a17fb2",
+        notifyButton: { enable: true },
+        allowLocalhostAsSecureOrigin: true,
+        serviceWorkerPath: 'OneSignalSDKWorker.js',
+        serviceWorkerUpdaterPath: 'OneSignalSDKUpdaterWorker.js',
+      });
+    });
+      
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker
+          .register("service-worker.js")
+          .then(() => console.log("✅ Service Worker regisztrálva"))
+          .catch((err) => console.log("❌ Service Worker hiba:", err));
+      });
+    }
+
+  </script>
+</head>
+<body>
+  <h1>Növényfigyelő 🌱</h1>
+  <div class="card" id="plantData">
+    <form id="loginForm">
+      <h3>Bejelentkezés</h3>
+      <input type="email" id="email" placeholder="Email" required /><br />
+      <input type="password" id="password" placeholder="Jelszó" required /><br />
+      <button type="submit">Belépés</button>
+    </form>
+    <button id="logout">Kijelentkezés</button>
+    <p id="status">Nincs bejelentkezve</p>
+    <div class="gauge-container">
+      <svg class="gauge-svg" width="200" height="200" viewBox="0 0 200 200">
+        <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
+        <circle class="gauge-fill" cx="100" cy="100" r="80"></circle>
+      </svg>
+      <div class="gauge-value" id="gauge-value">0%</div>
+    </div>
+  </div>
+  <div id="accountsContainer"></div>
+  <button id="addAccountBtn">+</button>
+  <div id="modal">
+    <div id="modalContent">
+      <span id="modalClose">&times;</span>
+      <h3>Bejelentkezés</h3>
+      <form id="addNewAccountForm">
+        <input type="email" id="newAccountEmail" placeholder="Email" required /><br />
+        <input type="password" id="newAccountPass" placeholder="Jelszó" required /><br />
+        <button type="submit">Belépés</button>
+      </form>
+      <p id="addAccountStatus"></p>
+    </div>
+  </div>
+  <div id="confirmModal">
+    <div id="confirmModalContent">
+      <span id="confirmClose">&times;</span>
+      <h3 id="confirmText">Biztosan törlöd ezt a fiókot?</h3>
+      <div class="confirm-btn-group">
+        <button class="confirm-btn confirm-igen" id="confirmIgenBtn">Igen</button>
+        <button class="confirm-btn confirm-nem" id="confirmNemBtn">Nem</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
